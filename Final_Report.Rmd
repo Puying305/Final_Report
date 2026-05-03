@@ -1,0 +1,116 @@
+---
+title: "Final Report"
+author: "Puying Li"
+date: "2026-05-02"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```
+
+# Introduction
+Regular physical activity is widely recognized as an important factor associated with overall health and well-being. Extensive evidence shows that physical activity is associated with reduced risk of chronic diseases and improved overall health outcomes.¹–³ In particular, prior research has demonstrated that individuals who engage in regular exercise are more likely to report better self-rated health compared to those who are physically inactive.¹,² 
+Therefore, the research question for this report is: Is exercise participation associated with self-reported general health among adults in New York? I hypothesize that adults who report participating in exercise are more likely to report better general health than adults who do not report exercising.
+
+# Material & Methods
+## Data
+The data used in this report came from a subset of BRFSS data including adults from New York. The variables examined for this analysis were self-reported general health (GENHLTH) and exercise participation (EXERANY2). Responses such as “Refused” and “Don’t know/Not sure” were excluded from the final analysis to improve interpretability.
+Because both exercise participation and self-reported general health are categorical variables, a chi-square test of independence was used to examine whether the distribution of general health differed by exercise participation status. This test evaluates whether there is a statistically significant association between two categorical variables. A significance level of p < 0.05 was used.
+
+```{r load-data, echo=FALSE, message=FALSE, warning=FALSE}
+brfss <- read.csv("brfss_subset_small.csv")
+```
+
+```{r data-cleaning-table, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+
+brfss_clean <- brfss %>%
+  filter(
+    GENHLTH %in% c("Excellent", "Very good", "Good", "Fair", "Poor"),
+    EXERANY2 %in% c("Yes", "No")
+  )
+
+cleaning_summary <- data.frame(
+  Sample = c(
+    "Original sample",
+    "Final analytic sample after excluding 'Don't know/Not sure' and 'Refused' responses"
+  ),
+  N = c(
+    nrow(brfss),
+    nrow(brfss_clean)
+  )
+)
+
+kable(
+  cleaning_summary,
+  caption = "Sample size before and after data cleaning",
+  col.names = c("Sample description", "Number of observations")
+)
+```
+
+
+
+
+
+```{r old-output-check, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+table_exercise_health <- table(brfss_clean$EXERANY2, brfss_clean$GENHLTH)
+chisq_test <- chisq.test(table_exercise_health)
+```
+
+# Results
+
+## Visualization
+
+```{r visualization, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(brfss_clean, aes(x = EXERANY2, fill = GENHLTH)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Self-reported general health by exercise participation",
+    x = "Exercise participation",
+    y = "Proportion",
+    fill = "General health"
+  )
+```
+```{r chi-square-table, echo=FALSE, message=FALSE, warning=FALSE}
+table_exercise_health <- table(brfss_clean$EXERANY2, brfss_clean$GENHLTH)
+chisq_test <- chisq.test(table_exercise_health)
+
+chi_square_table <- data.frame(
+  Test = "Pearson's chi-square test of independence",
+  Chi_square = round(as.numeric(chisq_test$statistic), 2),
+  df = as.numeric(chisq_test$parameter),
+  p_value = "< 0.001"
+)
+
+knitr::kable(
+  chi_square_table,
+  caption = "Chi-square test of association between exercise participation and self-reported general health",
+  col.names = c("Statistical test", "Chi-square", "df", "p-value")
+)
+```
+
+## Statistical Analyses
+After excluding non-informative responses, the final analytic sample included 2,978 adults in New York with valid responses for both general health and exercise participation. The distribution of self-reported general health differed across exercise groups. Among adults who reported exercising, 16.8% reported excellent health and 38.3% reported very good health. In comparison, among adults who did not report exercising, 6.2% reported excellent health and 18.7% reported very good health. The largest differences were observed in the very good, fair, and poor health categories. Adults who did not report exercising were more likely to report fair health than those who exercised (25.4% vs. 9.0%) and were also more likely to report poor health (11.3% vs. 2.0%).
+A chi-square test of independence showed a statistically significant association between exercise participation and self-reported general health, $\chi^2$(4) = 350.68, p < 0.001. This finding suggests that exercise participation is associated with differences in the distribution of self-reported general health among adults in New York.
+
+
+# Conclusions
+Overall, the results suggest that exercise participation is associated with self-reported general health among adults in New York. Adults who reported exercising were more likely to report excellent or very good health, while adults who did not report exercising were more likely to report fair or poor health. These findings are consistent with existing literature suggesting that physical activity is linked to improved health status.
+However, because the data are cross-sectional, causality cannot be established. In addition, self-reported general health is an ordinal outcome, with ordered categories ranging from poor to excellent. Although the chi-square test was appropriate for examining the association between two categorical variables, it does not fully account for the ordered structure of the health outcome. Future analyses could use methods that incorporate this ordering, such as ordinal logistic regression, to provide a deeper understanding of the relationship between exercise participation and general health.
+
+# AI Use Disclosure Statement
+This report was developed with the assistance of ChatGPT to help debug R code and organize the structure of the analysis. The statistical approach and interpretation of results were completed by the author.
+
+## Code
+https://github.com/Puying305/CP06_analysis.git
+
+# References
+1. Warburton DER, Bredin SSD. Health benefits of physical activity: a systematic review of current systematic reviews. Curr Opin Cardiol. 2017;32(5):541-556. doi:10.1097/HCO.0000000000000437
+2. Bull FC, Al-Ansari SS, Biddle S, et al. World Health Organization 2020 guidelines on physical activity and sedentary behaviour. Br J Sports Med. 2020;54(24):1451-1462. doi:10.1136/bjsports-2020-102955
+3. Centers for Disease Control and Prevention. Benefits of physical activity. CDC. Published 2022. https://www.cdc.gov/physicalactivity/basics/pa-health/index.htm
