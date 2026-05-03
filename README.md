@@ -6,7 +6,7 @@ This repository contains the final report and Shiny app for the VTPEH 6270 final
 
 ## Author
 
-Yuan Jingxin
+Puying Li
 
 ## Files Included
 
