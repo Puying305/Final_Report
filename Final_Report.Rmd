@@ -11,16 +11,20 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
+library(kableExtra)
+library(ggpattern)
 ```
 
 # Introduction
 Regular physical activity is widely recognized as an important factor associated with overall health and well-being. Extensive evidence shows that physical activity is associated with reduced risk of chronic diseases and improved overall health outcomes.¹–³ In particular, prior research has demonstrated that individuals who engage in regular exercise are more likely to report better self-rated health compared to those who are physically inactive.¹,² 
 Therefore, the research question for this report is: Is exercise participation associated with self-reported general health among adults in New York? I hypothesize that adults who report participating in exercise are more likely to report better general health than adults who do not report exercising.
+An accompanying Shiny app was also developed to allow users to interactively explore the same research question, compare proportion and count visualizations, and view the chi-square test result.
 
 # Material & Methods
 ## Data
 The data used in this report came from a subset of BRFSS data including adults from New York. The variables examined for this analysis were self-reported general health (GENHLTH) and exercise participation (EXERANY2). Responses such as “Refused” and “Don’t know/Not sure” were excluded from the final analysis to improve interpretability.
 Because both exercise participation and self-reported general health are categorical variables, a chi-square test of independence was used to examine whether the distribution of general health differed by exercise participation status. This test evaluates whether there is a statistically significant association between two categorical variables. A significance level of p < 0.05 was used.
+EXERANY2 was used to measure whether respondents reported participating in exercise during the past 30 days, with responses categorized as Yes or No. GENHLTH was used to measure self-reported general health, with responses categorized as Excellent, Very good, Good, Fair, or Poor.
 
 ```{r load-data, echo=FALSE, message=FALSE, warning=FALSE}
 brfss <- read.csv("brfss_subset_small.csv")
@@ -55,9 +59,6 @@ kable(
 ```
 
 
-
-
-
 ```{r old-output-check, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
 table_exercise_health <- table(brfss_clean$EXERANY2, brfss_clean$GENHLTH)
 chisq_test <- chisq.test(table_exercise_health)
@@ -67,33 +68,95 @@ chisq_test <- chisq.test(table_exercise_health)
 
 ## Visualization
 
-```{r visualization, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(brfss_clean, aes(x = EXERANY2, fill = GENHLTH)) +
-  geom_bar(position = "fill") +
+```{r visualization, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8, fig.height=5.5}
+ggplot(brfss_clean, aes(x = EXERANY2, fill = GENHLTH, pattern = GENHLTH)) +
+  geom_bar_pattern(
+    position = "fill",
+    color = "black",
+    pattern_fill = "black",
+    pattern_colour = "black",
+    pattern_density = 0.04,
+    pattern_spacing = 0.04,
+    linewidth = 0.4
+  ) +
+  scale_fill_grey(
+    start = 0.95,
+    end = 0.45,
+    name = "Self-reported general health"
+  ) +
+  scale_pattern_manual(
+    values = c(
+      "Poor" = "stripe",
+      "Fair" = "crosshatch",
+      "Good" = "circle",
+      "Very good" = "wave",
+      "Excellent" = "none"
+    ),
+    name = "Self-reported general health"
+  ) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    breaks = seq(0, 1, by = 0.25),
+    limits = c(0, 1)
+  ) +
   labs(
     title = "Self-reported general health by exercise participation",
-    x = "Exercise participation",
-    y = "Proportion",
-    fill = "General health"
+    x = "Exercise participation in the past 30 days",
+    y = "Percentage of respondents"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 15),
+    axis.title = element_text(size = 13),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 13, face = "bold"),
+    legend.text = element_text(size = 12),
+    legend.position = "right",
+    panel.grid.minor = element_blank()
   )
 ```
-```{r chi-square-table, echo=FALSE, message=FALSE, warning=FALSE}
+\begin{center}
+\textbf{Figure 1. Distribution of self-reported general health by exercise participation among adults in New York.}
+\end{center}
+
+Figure 1 shows that adults who reported exercising had a higher proportion of Excellent and Very good self-reported general health, while adults who did not report exercising had a higher proportion of Fair and Poor health.
+
+
+```{r chi-square-table, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
 table_exercise_health <- table(brfss_clean$EXERANY2, brfss_clean$GENHLTH)
 chisq_test <- chisq.test(table_exercise_health)
 
+cramers_v <- sqrt(as.numeric(chisq_test$statistic) /
+                    (sum(table_exercise_health) *
+                       (min(dim(table_exercise_health)) - 1)))
+
 chi_square_table <- data.frame(
-  Test = "Pearson's chi-square test of independence",
-  Chi_square = round(as.numeric(chisq_test$statistic), 2),
+  `Statistical test` = "Pearson's chi-square test of independence",
+  `Chi-square` = round(as.numeric(chisq_test$statistic), 2),
   df = as.numeric(chisq_test$parameter),
-  p_value = "< 0.001"
+  `p-value` = "< 0.001",
+  `Cramer's V` = round(cramers_v, 3),
+  check.names = FALSE
 )
+
+cat("\\vspace{0.4in}\n\n")
+cat("\\begin{center}\\textbf{Table 1. Chi-square test of association between exercise participation and self-reported general health.}\\end{center}\n\n")
 
 knitr::kable(
   chi_square_table,
-  caption = "Chi-square test of association between exercise participation and self-reported general health",
-  col.names = c("Statistical test", "Chi-square", "df", "p-value")
-)
+  align = c("l", "c", "c", "c", "c"),
+  booktabs = TRUE,
+  escape = FALSE
+) %>%
+  kableExtra::kable_styling(
+    full_width = FALSE,
+    position = "center",
+    font_size = 10,
+    latex_options = c("hold_position")
+  ) %>%
+  kableExtra::row_spec(0, bold = TRUE)
 ```
+The chi-square test showed a statistically significant association between exercise participation and self-reported general health, $\chi^2$(4) = 350.68, p < 0.001. Cramer's V was 0.343, suggesting a moderate association between the two categorical variables.
 
 ## Statistical Analyses
 After excluding non-informative responses, the final analytic sample included 2,978 adults in New York with valid responses for both general health and exercise participation. The distribution of self-reported general health differed across exercise groups. Among adults who reported exercising, 16.8% reported excellent health and 38.3% reported very good health. In comparison, among adults who did not report exercising, 6.2% reported excellent health and 18.7% reported very good health. The largest differences were observed in the very good, fair, and poor health categories. Adults who did not report exercising were more likely to report fair health than those who exercised (25.4% vs. 9.0%) and were also more likely to report poor health (11.3% vs. 2.0%).
@@ -107,8 +170,10 @@ However, because the data are cross-sectional, causality cannot be established. 
 # AI Use Disclosure Statement
 This report was developed with the assistance of ChatGPT to help debug R code and organize the structure of the analysis. The statistical approach and interpretation of results were completed by the author.
 
-## Code
-https://github.com/Puying305/CP06_analysis.git
+# Code
+GitHub repository: https://github.com/Puying305/Final_Report
+
+Shiny app: https://puying305.shinyapps.io/Final_Report_Shiny/
 
 # References
 1. Warburton DER, Bredin SSD. Health benefits of physical activity: a systematic review of current systematic reviews. Curr Opin Cardiol. 2017;32(5):541-556. doi:10.1097/HCO.0000000000000437
