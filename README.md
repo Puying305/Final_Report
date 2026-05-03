@@ -32,6 +32,7 @@ The analysis uses a subset of Behavioral Risk Factor Surveillance System (BRFSS)
 
 ```r
 install.packages(c("tidyverse", "kableExtra", "ggpattern"))
+```
 
 ## Outputs
 
